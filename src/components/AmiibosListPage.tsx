@@ -1,4 +1,4 @@
-import React, { SFC, useState, useEffect, Dispatch, SetStateAction } from "react";
+import React, { SFC, useState, useEffect } from "react";
 import { flowRight, debounce } from 'lodash';
 import AmiibosService from "../services/AmiibosService";
 import AmiiboModel from "../services/AmiiboModel";
@@ -19,44 +19,10 @@ import {
 } from "@material-ui/core";
 import UserAmiibosService from "../services/UserAmiibosService";
 
-interface AmiibosListPageState {
-  amiibos: Array<AmiiboModel>;
-  collectedAmiibos: Record<string, boolean>;
-}
-
-const initialState: AmiibosListPageState = {
-  amiibos: [],
-  collectedAmiibos: {}
-}
-
-const loadAmiibosListPageEffect =
-  (setState: Dispatch<SetStateAction<AmiibosListPageState>>) =>
-  () => {
-    setState({
-      amiibos: AmiibosService.instance.getAmiibos(),
-      collectedAmiibos: UserAmiibosService.instance.load()
-    });
-  }
-
 const saveCollectedAmiibos =
   debounce((collectedAmiibos: Record<string, boolean>) => {
     UserAmiibosService.instance.save(collectedAmiibos);
   }, 1000);
-
-const onToggleAmiibo =
-  (state: AmiibosListPageState, setState: Dispatch<SetStateAction<AmiibosListPageState>>, slug: string) =>
-  (_: any, checked: boolean) => {
-    const collectedAmiibos = {
-      ...state.collectedAmiibos,
-      [slug]: checked
-    };
-
-    setState({
-      ...state,
-      collectedAmiibos
-    });
-    saveCollectedAmiibos(collectedAmiibos);
-  };
 
 const styles: StyleRulesCallback = 
   () => ({
@@ -72,9 +38,16 @@ export const AmiibosListPage: SFC = flowRight(
   withStyles(styles)
 )(
   function AmiibosListPage({ classes = {} }: StyledComponentProps) {
-    const [state, setState] = useState<AmiibosListPageState>(initialState);
+    const [amiibos, setAmiibos] = useState<Array<AmiiboModel>>([]);
+    const [collectedAmiibos, setCollectedAmiibos] = useState<Record<string, boolean>>({});
 
-    useEffect(loadAmiibosListPageEffect(setState), []);
+    useEffect(() => {
+      setAmiibos(AmiibosService.instance.getAmiibos());
+      setCollectedAmiibos(UserAmiibosService.instance.load());
+    }, []);
+    useEffect(() => {
+      saveCollectedAmiibos(collectedAmiibos);
+    }, [collectedAmiibos]);
 
     return (
       <>
@@ -86,7 +59,7 @@ export const AmiibosListPage: SFC = flowRight(
           </Toolbar>
         </AppBar>
         <List>
-          {state.amiibos.map(amiibo => (
+          {amiibos.map(amiibo => (
             <ListItem key={amiibo.slug}>
               <ListItemAvatar>
                 <Avatar src={amiibo.figureUrl} />
@@ -94,8 +67,13 @@ export const AmiibosListPage: SFC = flowRight(
               <ListItemText primary={amiibo.name} secondary={amiibo.series} />
               <ListItemSecondaryAction>
                 <Switch 
-                  checked={state.collectedAmiibos[amiibo.slug]}
-                  onChange={onToggleAmiibo(state, setState, amiibo.slug)}
+                  checked={collectedAmiibos[amiibo.slug]}
+                  onChange={(_, checked) => {
+                    setCollectedAmiibos({
+                      ...collectedAmiibos,
+                      [amiibo.slug]: checked
+                    });
+                  }}
                 />
               </ListItemSecondaryAction>
             </ListItem>
