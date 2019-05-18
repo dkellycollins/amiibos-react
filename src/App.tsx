@@ -5,15 +5,17 @@ import { createBrowserHistory } from 'history';
 import AmiibosListPage from './components/AmiibosListPage';
 
 export const App: SFC = flowRight(
-)(() => {
-  return (
-    <Router history={createBrowserHistory()}>
-      <Switch>
-        <Route path="/amiibos" component={AmiibosListPage} />
-        <Redirect to="/amiibos" />
-      </Switch>
-    </Router>
-  );
-})
+)(
+  function App() {
+    return (
+      <Router history={createBrowserHistory()}>
+        <Switch>
+          <Route path="/amiibos" component={AmiibosListPage} />
+          <Redirect to="/amiibos" />
+        </Switch>
+      </Router>
+    );
+  }
+);
 
 export default App
